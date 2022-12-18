@@ -3,17 +3,25 @@ import os
 from flask import Flask, request, session, jsonify
 from werkzeug.utils import secure_filename
 from ariadne.asgi import GraphQL
-from ariadne import make_executable_schema, load_schema_from_path, ObjectType, publish
 from flask_cors import CORS
 from ariadne.constants import PLAYGROUND_HTML
 import logging
-import client
 import socket
 from glob import *
 import json
 import os
 import threading
-import glob
+from glob import *
+
+from ariadne import make_executable_schema, load_schema_from_path, \
+    snake_case_fallback_resolvers
+from ariadne.asgi import GraphQL
+from ariadne.asgi.handlers import GraphQLTransportWSHandler
+from starlette.middleware.cors import CORSMiddleware
+from subscriptions import subscription
+from store import messages, queues
+import uvicorn
+
 
 logger = logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger('HELLO WORLD')
@@ -25,12 +33,9 @@ class Client():
     '''
     def __init__(self) -> None:
         self.host = socket.gethostname()
-        self.port = DEFAULT_PORT_COORDINATOR_INPUT
+        self.port = TRIAL_PORT
         self.addr = (self.host, self.port)
         self.job_to_testres = {}
-    
-    def run_app(self):
-        self.app.run(port=8000)
     
     def store_all_result(self, image_folder_path_list:list):
         '''
@@ -52,7 +57,7 @@ class Client():
             elif path.endswith('.png') or path.endswith('.jpg'):
                 job_to_testres[child] = os.path.basename(os.path.dirname(path))
     
-    def receiver(self):
+    async def receiver(self):
         '''
         receive message from coordinator
         '''
@@ -68,11 +73,11 @@ class Client():
                     # if msg_type == 'accomplish':
                     #     job_type = msg['job_type']
                     #     image_to_pred = msg['pred']
-                    recv_int = msg['input']
-                    publish(
-                        'dataChanged',
-                        {'users':recv_int}
-                    )
+                    recv_str = msg['input']
+                    # update the recv_int
+                    for queue in queues:
+                        await queue.put(recv_str)
+                    
 
 
     def run_client(self):
@@ -82,34 +87,17 @@ class Client():
         t_receiver.start()
         t_receiver.join()
 
-app = Flask(__name__)
-app.config['SECRET_KEY'] = 'secret-key'
-app.config['UPLOAD_FOLDER'] = '/Users/dingsen2/Desktop/IDunno/backend/uploads'
-CORS(app, expose_headers='Authorization')
+app_upload = Flask(__name__)
+app_upload.config['SECRET_KEY'] = 'secret-key'
+app_upload.config['UPLOAD_FOLDER'] = '/Users/dingsen2/Desktop/IDunno/backend/uploads'
+CORS(app_upload, expose_headers='Authorization')
 
 # @app.route("/graphql", methods=["GET"])
 # def graphql_playground():
 #     return PLAYGROUND_HTML, 200
 
-type_defs = load_schema_from_path('schema.graphql')
-# Define a GraphQL object type for the DataType class using the @ObjectType decorator
-@ObjectType
-class DataType:
-    users: int
 
-# Define a GraphQL subscription type using the @ObjectType decorator
-class SubscriptionType(ObjectType):
-    @ObjectType
-    class Subscription:
-        data_changed = DataType.field
-
-# Map resolver functions to schema
-schema = make_executable_schema(type_defs, [SubscriptionType])
-# Create an instance of the Ariadne GraphQL class
-graphql = GraphQL(schema)
-
-
-@app.route('/upload', methods=['POST'])
+@app_upload.route('/upload', methods=['POST'])
 def monitor():
     '''
     monitor stdin input
@@ -167,15 +155,28 @@ def input_handler(job_type:str, flask_file):
         for host in CANDIDATE_COORDINATORS:
             s.sendto(json.dumps(client_input_msg).encode('utf-8'), (host, DEFAULT_PORT_CLIENT_INPUT))
 
-def run_app():
-    app.run(port=8000, debug=True)
+def run_app_upload():
+    app_upload.run(port=8001)
+
+
+# app for updating related statistics
+type_defs = load_schema_from_path("schema.graphql")
+
+schema = make_executable_schema(type_defs,subscription,
+                                snake_case_fallback_resolvers)
+app_update = CORSMiddleware(GraphQL(schema, debug=True, websocket_handler=GraphQLTransportWSHandler(),), allow_origins=['*'], allow_methods=("GET", "POST", "OPTIONS"))
+def run_update_app():
+    uvicorn.run(app_update, host="127.0.0.1", port=8100)
+
 
 def main():
-    client = Client()
-    t_receiver = threading.Thread(target=client.receiver)
-    t_file_upload = threading.Thread(target=run_app)
-    t_receiver.start()
-    t_file_upload.start()
+    # client = Client()
+    # t_file_upload = threading.Thread(target=run_app_upload)
+    # t_receiver = threading.Thread(target=receiver)
+    t_update_frontend = threading.Thread(target=run_update_app)
+    # t_file_upload.start()
+    t_update_frontend.start()
+    # t_receiver.start()
     # run_app()
 
 if __name__ == "__main__":

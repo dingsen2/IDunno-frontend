@@ -1,7 +1,7 @@
-type DataType {
-  users: Int!
+type Query {
+    messages(userId: String!): String
 }
 
 type Subscription {
-  dataChanged: DataType
+    messages: String
 }
