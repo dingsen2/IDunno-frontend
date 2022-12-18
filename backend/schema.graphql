@@ -1,0 +1,7 @@
+type DataType {
+  users: Int!
+}
+
+type Subscription {
+  dataChanged: DataType
+}
