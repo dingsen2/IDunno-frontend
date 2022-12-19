@@ -16,7 +16,7 @@ class Main extends React.Component {
         const data = new FormData();
         data.append('file', this.uploadInputAnimal.files[0]);
         data.append('job_type', job_type)
-        await fetch('http://localhost:8000/upload', { method: 'POST', body: data })
+        await fetch('http://localhost:8001/upload', { method: 'POST', body: data })
         .then((response) => { response.json().then((body) => { 
           });
         });
@@ -28,7 +28,7 @@ class Main extends React.Component {
         const data = new FormData();
         data.append('file', this.uploadInputNumber.files[0]);
         data.append('job_type', job_type)
-        await fetch('http://localhost:8000/upload', { method: 'POST', body: data })
+        await fetch('http://localhost:8001/upload', { method: 'POST', body: data })
         .then((response) => { response.json().then((body) => { 
           });
         });

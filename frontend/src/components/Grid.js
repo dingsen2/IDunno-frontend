@@ -1,4 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
+import axios from 'axios'
+import { split, useQuery, useSubscription, ApolloClient, InMemoryCache, HttpLink, ApolloProvider } from '@apollo/client';
+import { GraphQLWsLink } from '@apollo/client/link/subscriptions';
+import { createClient } from 'graphql-ws';
+import gql from 'graphql-tag';
+import { getMainDefinition } from '@apollo/client/utilities';
+
 
 const gridContainer = {
     display: 'grid',
@@ -6,77 +13,130 @@ const gridContainer = {
     gridTemplateRows: 'repeat(2, 1fr)'
 }
 
-const AnimalForm = (props) => {
-    return (
-        <form onSubmit={props.onSubmit}>
-            <h2>Animal Job</h2>
-            <div>
-                <input type="file" name='animal_form' />
-            </div>
-            <br />
-            <div>
-                <button>Upload</button>
-            </div>
-        </form>
-    );
-}
+const httplink = new HttpLink({
+    uri: 'http://127.0.0.1:8100/grapgql'
+})
 
-const NumberForm = (props) => {
-    return (
-        <form onSubmit={props.onSubmit}>
-            <h2>Number Job</h2>
-            <div>
-                <input type="file" name='number_form' />
-            </div>
-            <br />
-            <div>
-                <button>Upload</button>
-            </div>
-        </form>
-    );
-}
+const wsLink = new GraphQLWsLink(createClient({
+    url: 'ws://127.0.0.1:8100/messages',
+}));
 
+const splitLink = split(
+    ({ query }) => {
+        const definition = getMainDefinition(query);
+        return (
+            definition.kind === 'OperationDefinition' &&
+            definition.operation === 'subscription'
+        );
+    },
+    wsLink,
+    httplink,
+)
+
+const client = new ApolloClient({
+    cache: new InMemoryCache(),
+    link: splitLink
+});
+
+const SUBSCRIPTION_QUERY = gql`
+    subscription onMsgSent{
+      processed_cnt_msg {
+        animal_processed
+        number_processed
+      }
+    }
+  `;
+
+function AnimalMessageList() {
+    const { data, loading, error } = useSubscription(SUBSCRIPTION_QUERY, {
+      shouldResubscribe: true,
+    });
+  
+  
+    if (loading) {
+      return <p>Loading...</p>;
+    }
+  
+    if (error) {
+      return <p>Error: {error.message}</p>;
+    }
+    console.log(data)
+  
+    return (
+      <ul>
+        {/* {data.messages.map((message) => (
+            <p>
+              {message.content}
+            </p>
+        ))} */}
+      </ul>
+    );
+  }
 
 const Grid = () => {
-    const handleUploadAnimalAssignment = async (job_type, ev) => {
-        ev.preventDefault();
-        console.log(job_type)
-        const data = new FormData();
-        data.append('file', this.uploadInputAnimal.files[0]);
-        data.append('job_type', job_type)
-        await fetch('http://localhost:8000/upload', { method: 'POST', body: data })
-            .then((response) => {
-                response.json().then((body) => {
-                });
-            });
+    const [animalFile, setAnimalFile] = useState(null)
+    const [numberFile, setNumberFile] = useState(null)
+
+    const handleAnimalChange = (event) => {
+        event.preventDefault()
+        console.log("animal file uploaded")
+        setAnimalFile(event.target.files[0])
     }
 
-    const handleUploadNumberAssignment = async (job_type, ev) => {
+    const handleNumberChange = (event) => {
+        event.preventDefault()
+        setNumberFile(event.target.files[0])
+    }
+
+    const handleUploadAnimalAssignment = async (ev) => {
         ev.preventDefault();
-    
         const data = new FormData();
-        data.append('file', this.uploadInputNumber.files[0]);
-        data.append('job_type', job_type)
-        await fetch('http://localhost:8000/upload', { method: 'POST', body: data })
-            .then((response) => {
-                response.json().then((body) => {
-                });
-            });
+        data.append('file', animalFile);
+        data.append('job_type', "animal")
+        axios.post('http://localhost:8001/upload', data).then(response => {
+            console.log(response.data)
+        })
+    }
+
+    const handleUploadNumberAssignment = async (ev) => {
+        ev.preventDefault();
+
+        const data = new FormData();
+        data.append('file', numberFile);
+        data.append('job_type', "number")
+        axios.post('http://localhost:8001/upload', data).then(response => {
+            console.log(response.data)
+        })
     }
     return (
         <div style={gridContainer}>
             <div style={{ gridColumn: '1 / 2', gridRow: '1 / 2' }}>
-                <form>
-                    <AnimalForm onSubmit={handleUploadAnimalAssignment.bind("animal")}/>
+                <form onSubmit={handleUploadAnimalAssignment}>
+                    <h2>Animal Job</h2>
+                    <div>
+                        <input type="file" onChange={handleAnimalChange} />
+                    </div>
+                    <br />
+                    <div>
+                        <button>Upload</button>
+                    </div>
                 </form>
             </div>
             <div style={{ gridColumn: '2 / 3', gridRow: '1 / 2' }}>
-                {/* displaying the statistics for Animal job*/}
-                
+                <ApolloProvider client={client}>
+                    <AnimalMessageList />
+                </ApolloProvider>
             </div>
             <div style={{ gridColumn: '3 / 4', gridRow: '1 / 2' }}>
-                <form>
-                    <NumberForm onSubmit={handleUploadNumberAssignment.bind("number")}/>
+                <form onSubmit={handleUploadNumberAssignment}>
+                    <h2>Number Job</h2>
+                    <div>
+                        <input type="file" onChange={handleNumberChange} />
+                    </div>
+                    <br />
+                    <div>
+                        <button>Upload</button>
+                    </div>
                 </form>
             </div>
             <div style={{ gridColumn: '4 / ', gridRow: '1 / 2' }}>
