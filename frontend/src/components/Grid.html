@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="Grid.css">
+    <title>IDunno v1.0</title>
+</head>
+<body>
+    <div class="container">
+        <div class="item">item 1</div>
+        <div class="item">item 2</div>
+        <div class="item">item 3</div>
+        <div class="item">item 4</div>
+        <div class="item">item 5</div>
+        <div class="item">item 6</div>
+        <div class="item">item 7</div>
+        <div class="item">item 8</div>
+        <div class="item">item 9</div>
+
+    </div>
+    
+</body>
+</html>
+
+
+
+
+<body>
+    <div style={gridContainer}>
+        <div style={{ gridColumn: '1 / 2', gridRow: '1 / 2' }}>
+            <form onSubmit={handleUploadAnimalAssignment}>
+                <h2>Animal Job</h2>
+                <div>
+                    <input type="file" onChange={handleAnimalChange} />
+                </div>
+                <br />
+                <div>
+                    <button>Upload</button>
+                </div>
+            </form>
+        </div>
+        <div style={{ gridColumn: '2 / 3', gridRow: '1 / 2' }}>
+            <ApolloProvider client={client}>
+                <AnimalMessageList />
+            </ApolloProvider>
+        </div>
+        <div style={{ gridColumn: '3 / 4', gridRow: '1 / 2' }}>
+            <form onSubmit={handleUploadNumberAssignment}>
+                <h2>Number Job</h2>
+                <div>
+                    <input type="file" onChange={handleNumberChange} />
+                </div>
+                <br />
+                <div>
+                    <button>Upload</button>
+                </div>
+            </form>
+        </div>
+        <div style={{ gridColumn: '4 / ', gridRow: '1 / 2' }}>
+            {/* displaying the statistics for Number job*/}
+        </div>
+        <div style={{ gridColumn: '1 / 3', gridRow: '2 / 3' }}>Content for columns 1-3, row 2</div>
+        <div style={{ gridColumn: '3 / 5', gridRow: '2 / 3' }}>Content for columns 3-5, row 2</div>
+    </div>
+</body>

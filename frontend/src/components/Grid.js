@@ -6,6 +6,8 @@ import { createClient } from 'graphql-ws';
 import gql from 'graphql-tag';
 import { getMainDefinition } from '@apollo/client/utilities';
 
+import './Grid.css';
+
 
 const gridContainer = {
     display: 'grid',
@@ -107,44 +109,72 @@ const Grid = () => {
         axios.post('http://localhost:8001/upload', data).then(response => {
             console.log(response.data)
         })
+        
     }
-    return (
-        <div style={gridContainer}>
-            <div style={{ gridColumn: '1 / 2', gridRow: '1 / 2' }}>
-                <form onSubmit={handleUploadAnimalAssignment}>
-                    <h2>Animal Job</h2>
-                    <div>
-                        <input type="file" onChange={handleAnimalChange} />
+    return (   
+        <div className="App">
+            <header className="App-header">
+                <p>
+                    IDunno: A Distributed Machine Learning platform
+                </p>
+            </header>
+
+            <body className="App-body">
+                <div style={gridContainer}>
+                    <div style={{ gridColumn: '1 / 2', gridRow: '1 / 2' }}>
+                        <form onSubmit={handleUploadAnimalAssignment}>
+                            <h2>Animal</h2>
+                            <div>
+                                <input type="file" onChange={handleAnimalChange} />
+                            </div>
+                            <br />
+                            <div>
+                                <button>Upload</button>
+                            </div>
+                        </form>
                     </div>
-                    <br />
-                    <div>
-                        <button>Upload</button>
+                    <div style={{ gridColumn: '2 / 3', gridRow: '1 / 2' }}>
+                        <ApolloProvider client={client}>
+                            <AnimalMessageList />
+                        </ApolloProvider>
                     </div>
-                </form>
-            </div>
-            <div style={{ gridColumn: '2 / 3', gridRow: '1 / 2' }}>
-                <ApolloProvider client={client}>
-                    <AnimalMessageList />
-                </ApolloProvider>
-            </div>
-            <div style={{ gridColumn: '3 / 4', gridRow: '1 / 2' }}>
-                <form onSubmit={handleUploadNumberAssignment}>
-                    <h2>Number Job</h2>
-                    <div>
-                        <input type="file" onChange={handleNumberChange} />
+                    <div style={{ gridColumn: '3 / 4', gridRow: '1 / 2' }}>
+                        <form onSubmit={handleUploadNumberAssignment}>
+                            <h2>Number</h2>
+                            <div>
+                                <input type="file" onChange={handleNumberChange} />
+                            </div>
+                            <br />
+                            <div>
+                                <button>Upload</button>
+                            </div>
+                        </form>
                     </div>
-                    <br />
-                    <div>
-                        <button>Upload</button>
+                    <div style={{ gridColumn: '4 / ', gridRow: '1 / 2' }}>
+                        {/* displaying the statistics for Number job*/}
                     </div>
-                </form>
-            </div>
-            <div style={{ gridColumn: '4 / ', gridRow: '1 / 2' }}>
-                {/* displaying the statistics for Number job*/}
-            </div>
-            <div style={{ gridColumn: '1 / 3', gridRow: '2 / 3' }}>Content for columns 1-3, row 2</div>
-            <div style={{ gridColumn: '3 / 5', gridRow: '2 / 3' }}>Content for columns 3-5, row 2</div>
+                    <div style={{ gridColumn: '1 / 3', gridRow: '2 / 3' }}>Content for columns 1-4</div>
+                    <div style={{ gridColumn: '3 / 5', gridRow: '2 / 3' }}>Content for columns 5-8</div>
+                </div>
+            </body>
+
+            <footer className="App-footer">
+                <p>
+                    <i>Copyright: Dingsen Shi & Ruipeng Min</i>
+                </p>
+                <a
+                    className="App-link"
+                    href="https://github.com/dingsen2/IDunno"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                >
+                    Learn more
+                </a>
+                
+            </footer>
+
         </div>
+           
     );
 }
 
